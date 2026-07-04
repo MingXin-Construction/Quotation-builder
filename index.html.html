@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GAL Construction — Quotation Builder 報價系統</title>
+<style>
+  :root {
+    --navy: #1F3A5F;
+    --red: #C0392B;
+    --lightblue: #DCE6F1;
+    --grey: #F5F5F5;
+    --border: #D9D9D9;
+    --text: #1A1A1A;
+    --muted: #777;
+    --accent: #2563EB;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 14px; color: var(--text); background: #F8F9FB; }
+
+  /* ── Header ── */
+  .site-header {
+    background: var(--navy);
+    color: #fff;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  }
+  .site-header .brand { font-size: 15px; font-weight: 600; letter-spacing: 0.01em; }
+  .site-header .brand span { color: #C0392B; }
+  .site-header .tagline { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+
+  /* ── Layout ── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; }
+
+  /* ── Card ── */
+  .card { background: #fff; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 20px; overflow: hidden; }
+  .card-header { background: var(--navy); color: #fff; padding: 11px 18px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .card-header .step-badge { background: rgba(255,255,255,0.2); border-radius: 50%; width: 22px; height: 22px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
+  .card-body { padding: 18px; }
+
+  /* ── Type toggle ── */
+  .type-row { display: flex; gap: 10px; margin-bottom: 4px; }
+  .type-btn { flex: 1; padding: 10px; border: 2px solid var(--border); border-radius: 8px; background: #fff; cursor: pointer; text-align: center; transition: all 0.15s; }
+  .type-btn .tb-title { font-size: 13px; font-weight: 600; }
+  .type-btn .tb-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .type-btn.active { border-color: var(--navy); background: var(--lightblue); }
+  .type-btn.active .tb-title { color: var(--navy); }
+
+  /* ── Meta form ── */
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .meta-grid .full { grid-column: 1 / -1; }
+  .field label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 5px; }
+  .field input, .field select { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 13px; color: var(--text); background: #fff; transition: border 0.15s; }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37,99,235,0.12); }
+
+  /* ── Add item bar ── */
+  .add-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; }
+  .add-bar select { flex: 1; border: 1px solid var(--border); border-radius: 6px; padding: 9px 10px; font-size: 13px; }
+  .add-bar select:focus { outline: none; border-color: var(--accent); }
+  .btn { padding: 9px 18px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-navy { background: var(--navy); color: #fff; }
+  .btn-navy:hover { background: #162d4e; }
+  .btn-red { background: var(--red); color: #fff; }
+  .btn-red:hover { background: #a93226; }
+  .btn-outline { background: #fff; color: var(--navy); border: 1.5px solid var(--navy); }
+  .btn-outline:hover { background: var(--lightblue); }
+  .btn-grey { background: var(--grey); color: var(--text); border: 1px solid var(--border); }
+  .btn-grey:hover { background: #ebebeb; }
+
+  /* ── Items table ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { background: var(--navy); color: #fff; }
+  thead th { padding: 9px 10px; text-align: left; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  thead th.r { text-align: right; }
+  thead th.c { text-align: center; }
+  tbody tr { border-bottom: 1px solid #EFEFEF; }
+  tbody tr:hover { background: #FAFBFF; }
+  tbody td { padding: 8px 10px; vertical-align: middle; }
+  tbody td.r { text-align: right; }
+  tbody td.c { text-align: center; }
+  .desc-en { font-size: 13px; color: var(--text); font-weight: 500; }
+  .desc-zh { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .code-pill { font-size: 11px; font-weight: 700; color: var(--navy); background: var(--lightblue); padding: 2px 7px; border-radius: 4px; }
+  .qty-input { width: 70px; border: 1px solid var(--border); border-radius: 5px; padding: 5px 6px; text-align: center; font-size: 13px; }
+  .qty-input:focus { outline: none; border-color: var(--accent); }
+  .amount-val { font-weight: 600; color: var(--navy); }
+  .del-btn { background: none; border: none; cursor: pointer; color: #bbb; font-size: 16px; padding: 4px 8px; border-radius: 4px; line-height: 1; }
+  .del-btn:hover { background: #FFECEC; color: var(--red); }
+  .empty-row td { text-align: center; padding: 32px; color: var(--muted); font-size: 13px; }
+
+  /* ── Totals ── */
+  .totals-panel { background: var(--grey); border-radius: 8px; padding: 16px 20px; margin-top: 16px; }
+  .total-line { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 13px; }
+  .total-line .tl { color: var(--muted); }
+  .total-line .tv { font-weight: 600; color: var(--text); }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+  .grand-line { display: flex; justify-content: space-between; align-items: center; background: var(--navy); color: #fff; border-radius: 7px; padding: 13px 18px; margin-top: 10px; }
+  .grand-line .gl { font-size: 13px; font-weight: 600; }
+  .grand-line .gl small { display: block; font-size: 11px; font-weight: 400; opacity: 0.7; margin-top: 1px; }
+  .grand-line .gv { font-size: 20px; font-weight: 700; }
+  .sst-tag { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; margin-left: 8px; }
+  .sst-yes { background: #FFF3CD; color: #856404; }
+  .sst-no { background: #D4EDDA; color: #155724; }
+
+  /* ── Action bar ── */
+  .action-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+
+  /* ── Preview overlay ── */
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; overflow-y: auto; padding: 30px 16px; }
+  .overlay.active { display: block; }
+  .preview-modal { background: #fff; max-width: 820px; margin: 0 auto; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+  .preview-toolbar { background: var(--grey); border-bottom: 1px solid var(--border); padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; }
+  .preview-toolbar span { font-size: 13px; font-weight: 600; color: var(--navy); }
+  .preview-toolbar .toolbar-btns { display: flex; gap: 8px; }
+  .preview-content { padding: 32px 36px; }
+
+  /* ── Preview document ── */
+  .doc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+  .doc-logo-text .company { font-size: 17px; font-weight: 700; color: var(--navy); }
+  .doc-logo-text .reg { font-size: 11px; color: var(--muted); }
+  .doc-logo-text .addr { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .doc-title { text-align: right; }
+  .doc-title .title-en { font-size: 24px; font-weight: 700; color: var(--red); }
+  .doc-title .title-zh { font-size: 18px; font-weight: 700; color: var(--red); }
+  .doc-divider { border: none; border-bottom: 3px solid var(--red); margin-bottom: 18px; }
+  .doc-meta { display: grid; grid-template-columns: auto 1fr; gap: 4px 20px; font-size: 12px; margin-bottom: 18px; }
+  .doc-meta .mk { font-weight: 600; color: var(--navy); white-space: nowrap; }
+  .doc-meta .mv { color: var(--text); }
+  .doc-intro { font-size: 12px; font-style: italic; color: #555; margin-bottom: 14px; }
+  .doc-intro .zh { color: var(--muted); margin-top: 2px; }
+  .doc-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 0; }
+  .doc-table thead tr { background: var(--navy); }
+  .doc-table thead th { color: #fff; padding: 8px 9px; font-size: 11px; font-weight: 600; }
+  .doc-table thead th.r { text-align: right; }
+  .doc-table thead th.c { text-align: center; }
+  .doc-table tbody td { border: 1px solid #E0E0E0; padding: 8px 9px; vertical-align: top; }
+  .doc-table tbody td.r { text-align: right; font-weight: 600; }
+  .doc-table tfoot td { border: 1px solid #E0E0E0; padding: 7px 9px; }
+  .tf-lbl { text-align: right; font-weight: 600; color: #555; background: var(--grey); }
+  .tf-val { text-align: right; font-weight: 600; background: var(--grey); min-width: 90px; }
+  .tf-grand { background: var(--navy) !important; color: #fff !important; font-weight: 700 !important; }
+  .doc-remark { font-size: 11px; color: #666; margin-top: 10px; font-style: italic; }
+  .doc-terms { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 14px; }
+  .doc-terms h4 { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+  .doc-terms p { font-size: 11px; color: #555; line-height: 1.8; margin-bottom: 4px; }
+  .doc-terms .zh { color: var(--muted); }
+  .doc-sigs { display: flex; justify-content: space-between; margin-top: 28px; }
+  .doc-sig { text-align: center; }
+  .sig-line { width: 200px; border-bottom: 1px solid #999; margin-bottom: 6px; height: 36px; }
+  .sig-label { font-size: 11px; color: var(--muted); }
+  .print-hide { }
+  @media print {
+    .site-header, .action-bar, .preview-toolbar, .print-hide { display: none !important; }
+    .overlay { position: static; background: none; padding: 0; }
+    .preview-modal { box-shadow: none; border-radius: 0; }
+    .preview-content { padding: 20px; }
+    body { background: #fff; }
+  }
+  @media (max-width: 640px) {
+    .meta-grid { grid-template-columns: 1fr; }
+    .meta-grid .full { grid-column: 1; }
+    .action-bar { flex-direction: column; }
+    .preview-content { padding: 18px; }
+    .doc-header { flex-direction: column; gap: 10px; }
+    .doc-title { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div>
+    <div class="brand"><span>GAL</span> Construction — Quotation Builder 報價系統</div>
+    <div class="tagline">Select items · Enter quantity · Preview & Print</div>
+  </div>
+  <div class="header-right">
+    <button class="btn btn-red" onclick="showPreview()">▶ Preview &amp; Print 預覽打印</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Step 1: Project Type -->
+  <div class="card">
+    <div class="card-header"><span class="step-badge">1</span> Project Type &amp; Information 工程類型與項目信息</div>
+    <div class="card-body">
+      <div style="margin-bottom:14px">
+        <div class="type-row">
+          <button class="type-btn active" id="btn-res" onclick="setType('residential')">
+            <div class="tb-title">🏠 Residential 住宅類</div>
+            <div class="tb-sub">No SST · 免消費稅</div>
+          </button>
+          <button class="type-btn" id="btn-com" onclick="setType('commercial')">
+            <div class="tb-title">🏢 Commercial 商業類</div>
+            <div class="tb-sub">SST 6% applies · 須課6%消費稅</div>
+          </button>
+        </div>
+      </div>
+      <div class="meta-grid">
+        <div class="field">
+          <label>Ref No. 報價編號</label>
+          <input id="f-ref" placeholder="e.g. QUO-260701-R1">
+        </div>
+        <div class="field">
+          <label>Date 日期</label>
+          <input id="f-date" type="date">
+        </div>
+        <div class="field">
+          <label>Prepared by 報價人員</label>
+          <input id="f-by" placeholder="e.g. Ahmad / QS team">
+        </div>
+        <div class="field full">
+          <label>Client Name &amp; Contact 客戶姓名及聯絡</label>
+          <input id="f-client" placeholder="e.g. Mr Tan Wei Ming  ( 012-345 6789 )">
+        </div>
+        <div class="field full">
+          <label>Site Address 工地地址</label>
+          <input id="f-addr" placeholder="e.g. No.12, Jalan Bunga, Taman Maju, 41300 Klang, Selangor">
+        </div>
+        <div class="field full">
+          <label>Subject 工程描述</label>
+          <input id="f-subj" placeholder="e.g. Quotation for Renovation Works — Hacking, Tiling & Painting">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Items -->
+  <div class="card">
+    <div class="card-header"><span class="step-badge">2</span> Add Work Items 添加工程項目</div>
+    <div class="card-body">
+      <div class="add-bar">
+        <select id="item-sel">
+          <option value="">— Select item from list 從列表選擇工程項目 —</option>
+        </select>
+        <button class="btn btn-navy" onclick="addItem()">＋ Add 添加</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:36px" class="c">No.</th>
+              <th style="width:80px">Code</th>
+              <th>Description / 工程說明</th>
+              <th style="width:80px" class="c">Qty 數量</th>
+              <th style="width:55px" class="c">Unit</th>
+              <th style="width:90px" class="r">Rate (RM)</th>
+              <th style="width:100px" class="r">Amount (RM)</th>
+              <th style="width:36px"></th>
+            </tr>
+          </thead>
+          <tbody id="tbl-body"></tbody>
+        </table>
+      </div>
+
+      <div class="totals-panel" id="totals-panel">
+        <div class="total-line"><span class="tl">Sub-Total 小計</span><span class="tv" id="t-sub">RM 0.00</span></div>
+        <div id="sst-line" style="display:none">
+          <hr class="divider">
+          <div class="total-line"><span class="tl">SST 6% 消費稅</span><span class="tv" id="t-sst">RM 0.00</span></div>
+        </div>
+        <div class="grand-line">
+          <div class="gl">TOTAL AMOUNT (RM) 總金額<small id="t-type-note">Residential · No SST · 住宅類免消費稅</small></div>
+          <div class="gv" id="t-grand">RM 0.00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action bar -->
+  <div class="action-bar">
+    <button class="btn btn-red" onclick="showPreview()">▶ Preview &amp; Print 預覽 / 打印報價單</button>
+    <button class="btn btn-outline" onclick="addCustomRow()">＋ Add custom item 添加自訂項目</button>
+    <button class="btn btn-grey" onclick="clearAll()">✕ Clear all 清空</button>
+  </div>
+
+</div><!-- /container -->
+
+<!-- Preview overlay -->
+<div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
+  <div class="preview-modal" id="preview-modal">
+    <div class="preview-toolbar print-hide">
+      <span>📄 Quotation Preview 報價單預覽</span>
+      <div class="toolbar-btns">
+        <button class="btn btn-navy" onclick="window.print()">🖨 Print / Save PDF</button>
+        <button class="btn btn-grey" onclick="closePreview()">✕ Close</button>
+      </div>
+    </div>
+    <div class="preview-content" id="preview-content"></div>
+  </div>
+</div>
+
+<script>
+/* ===================== PRICE DATABASE ===================== */
+const DB = {
+  "HD-01":{"cat":"A. Protection & Hoarding 施工前保護","en":"Floor protection using plywood board and standard canvas sheeting","zh":"地面保護層（夾板+帆布覆蓋）","unit":"sqft","rate":4.00},
+  "HD-02":{"cat":"A. Protection & Hoarding 施工前保護","en":"Temporary hoarding — timber post and metal deck cladding system, 3.6m height","zh":"臨時圍籬，木柱鐵皮系統，高3.6米","unit":"m","rate":775.00},
+  "HD-03":{"cat":"A. Protection & Hoarding 施工前保護","en":"Security gate — MS hollow section frame, supply and install","zh":"圍籬保安門，鋼框架供應安裝","unit":"set","rate":9000.00},
+  "HD-04":{"cat":"A. Protection & Hoarding 施工前保護","en":"G26 zinc hoarding sheet, supply and install, incl. truck entrance doors","zh":"鋅鐵圍籬板供應安裝（含貨車門）","unit":"ft","rate":96.00},
+  "HD-05":{"cat":"A. Protection & Hoarding 施工前保護","en":"Scaffolding rental — exterior wall works","zh":"外牆鐵架租賃","unit":"month","rate":500.00},
+  "HK-01":{"cat":"B. Hacking & Demolition 敲打與拆除","en":"Hacking and disposal of existing floor tiles, incl. debris clearance","zh":"拆除地面瓷磚，清運廢料","unit":"sqft","rate":5.93},
+  "HK-02":{"cat":"B. Hacking & Demolition 敲打與拆除","en":"Hacking and disposal of existing wall tiles, incl. debris clearance","zh":"拆除牆面瓷磚，清運廢料","unit":"sqft","rate":8.40},
+  "HK-03":{"cat":"B. Hacking & Demolition 敲打與拆除","en":"Hacking and disposal of existing brick wall, incl. wall plastering make-good","zh":"拆除磚牆，含補回批灰","unit":"sqft","rate":10.00},
+  "HK-04":{"cat":"B. Hacking & Demolition 敲打與拆除","en":"Hacking and disposal of existing bathroom — wall and floor tiles, 1 unit","zh":"拆除衛生間牆磚與地磚（1間）","unit":"nos","rate":1400.00},
+  "HK-05":{"cat":"B. Hacking & Demolition 敲打與拆除","en":"Dismantle and dispose of existing door incl. frame","zh":"拆除原有門及門框","unit":"nos","rate":300.00},
+  "HK-06":{"cat":"B. Hacking & Demolition 敲打與拆除","en":"Dismantle and dispose of existing window","zh":"拆除原有窗戶","unit":"nos","rate":300.00},
+  "HK-07":{"cat":"B. Hacking & Demolition 敲打與拆除","en":"Hacking off existing wall to form new door opening, standard 3ft x 7ft","zh":"敲除牆體做新門洞，標準3尺x7尺","unit":"nos","rate":300.00},
+  "HK-08":{"cat":"B. Hacking & Demolition 敲打與拆除","en":"Dismantle and dispose of existing kitchen cabinets","zh":"拆除原有廚櫃","unit":"lot","rate":6000.00},
+  "HK-09":{"cat":"B. Hacking & Demolition 敲打與拆除","en":"Dismantle and disconnect entire floor electrical wiring","zh":"拆除整層原有電線及配線","unit":"lot","rate":1300.00},
+  "HK-10":{"cat":"B. Hacking & Demolition 敲打與拆除","en":"Dismantle and dispose of existing plaster ceiling, incl. debris clearance","zh":"拆除原有天花吊頂，清運廢料","unit":"sqft","rate":2.50},
+  "HK-11":{"cat":"B. Hacking & Demolition 敲打與拆除","en":"Scrub away existing internal wall paint and clear off debris","zh":"鏟除室內牆面油漆並清理現場","unit":"sqft","rate":4.50},
+  "HK-12":{"cat":"B. Hacking & Demolition 敲打與拆除","en":"Dismantle and dispose of existing timber plank flooring","zh":"拆除原有木地板","unit":"sqft","rate":3.50},
+  "HK-13":{"cat":"B. Hacking & Demolition 敲打與拆除","en":"Dismantle existing staircase steps and platform, per flight","zh":"拆除樓梯台階及平台（每段）","unit":"lot","rate":600.00},
+  "HK-14":{"cat":"B. Hacking & Demolition 敲打與拆除","en":"Dismantle and dispose of existing furniture and built-in cabinets","zh":"拆除原有家私及built-in櫥櫃","unit":"lot","rate":2000.00},
+  "HK-15":{"cat":"B. Hacking & Demolition 敲打與拆除","en":"Hacking and disposal of existing concrete slab with ground beam and columns","zh":"拆除原有混凝土板連地樑及柱子","unit":"lot","rate":18000.00},
+  "NB-01":{"cat":"C. Structural & New Build 結構與新建","en":"Supply and build mass concrete footing base, 450mm x 450mm x 450mm","zh":"供應及建造混凝土基礎承台，450mm立方","unit":"nos","rate":400.00},
+  "NB-02":{"cat":"C. Structural & New Build 結構與新建","en":"Pilling works — concrete square pile 150mm x 150mm x 6m depth","zh":"打樁工程，混凝土方樁150x150x6米深","unit":"nos","rate":2600.00},
+  "NB-03":{"cat":"C. Structural & New Build 結構與新建","en":"Supply and build concrete ground beam, 200mm x 600mm, Y16/Y12 rebar, Grade C30","zh":"供應及建造混凝土地樑，含鋼筋，C30標號","unit":"ft","rate":160.00},
+  "NB-04":{"cat":"C. Structural & New Build 結構與新建","en":"Supply and build RC column, 120mm x 450mm, Y12 rebar, incl. formwork","zh":"供應及建造鋼筋混凝土柱，含模板","unit":"nos","rate":1800.00},
+  "NB-05":{"cat":"C. Structural & New Build 結構與新建","en":"Supply and build RC beam, 120mm x 450mm, incl. formwork and rebar","zh":"供應及建造鋼筋混凝土樑，含模板鋼筋","unit":"ft","rate":190.00},
+  "NB-06":{"cat":"C. Structural & New Build 結構與新建","en":"Supply and build concrete floor slab, ±150mm thick, BRC A8 double-layer, Grade C30","zh":"供應及建造混凝土地板，含BRC鋼筋網雙層，C30標號","unit":"sqft","rate":10.50},
+  "NB-07":{"cat":"C. Structural & New Build 結構與新建","en":"Supply and build 9-inch (225mm) brick wall using red bricks","zh":"供應及建造9寸紅磚牆","unit":"sqft","rate":19.00},
+  "NB-08":{"cat":"C. Structural & New Build 結構與新建","en":"Supply and build 6-inch (150mm) brick wall using red bricks","zh":"供應及建造6寸紅磚牆","unit":"sqft","rate":16.00},
+  "NB-09":{"cat":"C. Structural & New Build 結構與新建","en":"Supply and build 150mm lightweight brick wall, full height to slab","zh":"供應及建造150mm輕質磚牆，到頂","unit":"sqm","rate":100.00},
+  "NB-10":{"cat":"C. Structural & New Build 結構與新建","en":"Interior wall plastering, cement mortar, within ±5mm tolerance, incl. corner bead","zh":"室內牆面批灰抹平，誤差±5mm，含陽角條","unit":"sqft","rate":6.50},
+  "NB-11":{"cat":"C. Structural & New Build 結構與新建","en":"Exterior wall plastering, cement mortar, within ±10mm tolerance, incl. corner bead","zh":"室外牆面批灰抹平，誤差±10mm，含陽角條","unit":"sqft","rate":8.00},
+  "NB-12":{"cat":"C. Structural & New Build 結構與新建","en":"Supply and build lintel and door jamb for new door opening","zh":"供應及安裝門楣及門框（新開口）","unit":"set","rate":1600.00},
+  "NB-13":{"cat":"C. Structural & New Build 結構與新建","en":"Supply and build concrete roof slab, incl. formwork, rebar, crane rental","zh":"供應及建造混凝土屋頂平台，含模板鋼筋吊機","unit":"sqft","rate":90.00},
+  "NB-14":{"cat":"C. Structural & New Build 結構與新建","en":"Metal stud gypsum partition, full height, double-sided plasterboard","zh":"輕鋼龍骨石膏板隔牆，到頂雙面","unit":"sqm","rate":140.00},
+  "WF-01":{"cat":"D. Waterproofing 防水工程","en":"Supply and apply waterproofing membrane — toilet and wet area floor","zh":"供應及塗刷防水層（衛浴地面）","unit":"sqft","rate":13.00},
+  "WF-02":{"cat":"D. Waterproofing 防水工程","en":"Supply and apply waterproofing membrane — wall up to H=1800mm","zh":"供應及塗刷牆面防水層（H=1800mm）","unit":"sqft","rate":11.50},
+  "WF-03":{"cat":"D. Waterproofing 防水工程","en":"Conceal waterproofing membrane — roof top concrete slab, 5-year warranty","zh":"屋頂混凝土板隱蔽防水膜，5年保固","unit":"sqft","rate":28.00},
+  "WF-04":{"cat":"D. Waterproofing 防水工程","en":"Supply and build cement render protection layer after waterproofing application","zh":"供應及建造防水保護層（水泥砂漿）","unit":"sqft","rate":7.00},
+  "TL-01":{"cat":"E. Tiling Works 瓷磚工程","en":"Floor tile installation — labour and leveling, standard size up to 600x600mm","zh":"地磚鋪設（人工+找平），標準尺寸至600x600mm","unit":"sqft","rate":11.00},
+  "TL-02":{"cat":"E. Tiling Works 瓷磚工程","en":"Floor tile installation — labour and leveling, large format 600x1200mm and above","zh":"大尺寸地磚鋪設（人工+找平），600x1200mm及以上","unit":"sqft","rate":17.00},
+  "TL-03":{"cat":"E. Tiling Works 瓷磚工程","en":"Wall tile installation — labour only, standard size up to 600x600mm","zh":"牆磚鋪設（人工），標準尺寸至600x600mm","unit":"sqft","rate":11.00},
+  "TL-04":{"cat":"E. Tiling Works 瓷磚工程","en":"Wall tile installation — labour only, large format 600x1200mm and above","zh":"大尺寸牆磚鋪設（人工），600x1200mm及以上","unit":"sqft","rate":17.00},
+  "TL-05":{"cat":"E. Tiling Works 瓷磚工程","en":"Tile skirting installation","zh":"踢腳線瓷磚安裝","unit":"ft","rate":6.00},
+  "TL-06":{"cat":"E. Tiling Works 瓷磚工程","en":"Supply cement, tile adhesive and leveling system — spreading material","zh":"供應水泥、瓷磚膠及找平材料","unit":"sqft","rate":6.50},
+  "TL-07":{"cat":"E. Tiling Works 瓷磚工程","en":"Tile grouting — labour only (美縫)","zh":"瓷磚美縫（人工）","unit":"sqft","rate":2.00},
+  "TL-08":{"cat":"E. Tiling Works 瓷磚工程","en":"Supply of grout material (美縫劑)","zh":"供應美縫劑","unit":"sqft","rate":3.00},
+  "TL-09":{"cat":"E. Tiling Works 瓷磚工程","en":"Shower area niche or 45-degree corner cutting — additional works","zh":"淋浴區壁龕/45度切角，附加工程","unit":"nos","rate":300.00},
+  "TL-10":{"cat":"E. Tiling Works 瓷磚工程","en":"Floor trap or water inlet hole cutting","zh":"地漏/進水孔開孔","unit":"nos","rate":50.00},
+  "PC-01":{"cat":"F. Plaster Ceiling 天花吊頂","en":"Supply and install flat plaster ceiling with steel structure","zh":"供應及安裝平面石膏天花（鋼架）","unit":"sqft","rate":5.80},
+  "PC-02":{"cat":"F. Plaster Ceiling 天花吊頂","en":"Supply and install light box or cove ceiling","zh":"供應及安裝燈槽/裝飾線吊頂","unit":"ft","rate":26.00},
+  "PC-03":{"cat":"F. Plaster Ceiling 天花吊頂","en":"Supply and install A/C service manhole, 24in x 24in","zh":"供應及安裝冷氣檢修口，24x24吋","unit":"nos","rate":200.00},
+  "PC-04":{"cat":"F. Plaster Ceiling 天花吊頂","en":"Bathroom manhole and downlight ceiling open holes","zh":"衛生間檢修口及筒燈開孔","unit":"nos","rate":7.50},
+  "PT-01":{"cat":"G. Painting 油漆工程","en":"Supply and apply interior wall paint — 1 coat sealer and 2 coats finishing","zh":"供應及塗刷室內牆面漆（底漆+雙面漆）","unit":"sqft","rate":5.50},
+  "PT-02":{"cat":"G. Painting 油漆工程","en":"Supply and apply exterior wall paint — 1 coat sealer and 2 coats finishing","zh":"供應及塗刷室外牆面漆（底漆+雙面漆）","unit":"sqft","rate":6.50},
+  "PT-03":{"cat":"G. Painting 油漆工程","en":"Labour only — paint application (paint material supplied by owner)","zh":"純人工油漆施工（油漆材料業主自備）","unit":"sqft","rate":3.00},
+  "EL-01":{"cat":"H. Electrical Works 電工工程","en":"13 Amp power point — supply, install and wiring","zh":"13安培電插座，供應安裝含布線","unit":"nos","rate":175.00},
+  "EL-02":{"cat":"H. Electrical Works 電工工程","en":"Lighting point — supply, install and wiring","zh":"燈具點位，供應安裝含布線","unit":"nos","rate":130.00},
+  "EL-03":{"cat":"H. Electrical Works 電工工程","en":"Fan point — supply, install and wiring","zh":"風扇點位，供應安裝含布線","unit":"nos","rate":130.00},
+  "EL-04":{"cat":"H. Electrical Works 電工工程","en":"Distribution Board (DB) — single-phase, supply and install","zh":"配電箱供應安裝，單相","unit":"set","rate":3360.00},
+  "EL-05":{"cat":"H. Electrical Works 電工工程","en":"Distribution Board (DB) — 3-phase 30-way, supply and install","zh":"配電箱供應安裝，三相30路","unit":"set","rate":9000.00},
+  "EL-06":{"cat":"H. Electrical Works 電工工程","en":"Air-conditioning dedicated power circuit point","zh":"冷氣專用電路點位","unit":"nos","rate":280.00},
+  "EL-07":{"cat":"H. Electrical Works 電工工程","en":"CCTV point wiring (camera and system supplied separately)","zh":"監控線路點位（攝像頭及主機另計）","unit":"nos","rate":450.00},
+  "WP-01":{"cat":"I. Water Piping 水喉工程","en":"Inlet and outlet water point set — bathroom (4 points)","zh":"進排水點位套裝（衛浴，4個點）","unit":"set","rate":3800.00},
+  "WP-02":{"cat":"I. Water Piping 水喉工程","en":"Inlet and outlet water point set — kitchen (3 points)","zh":"進排水點位套裝（廚房，3個點）","unit":"set","rate":2400.00},
+  "WP-03":{"cat":"I. Water Piping 水喉工程","en":"Hot water piping — internal, per bathroom or kitchen zone","zh":"熱水管喉，室內每個衛浴/廚房區域","unit":"zone","rate":3000.00},
+  "WP-04":{"cat":"I. Water Piping 水喉工程","en":"Main water inlet supply piping to water tank, PPR 32mm","zh":"主進水管至水箱，PPR 32mm","unit":"lot","rate":6300.00},
+  "WP-05":{"cat":"I. Water Piping 水喉工程","en":"Roofing rainwater drain pipe, PVC 4-inch (per point)","zh":"屋頂雨水排水管，PVC 4寸（每個點）","unit":"point","rate":1400.00},
+  "WP-06":{"cat":"I. Water Piping 水喉工程","en":"Water pump — supply, install and pipe fittings","zh":"水泵供應安裝，含管件","unit":"set","rate":2200.00},
+  "RF-01":{"cat":"J. Roofing 屋頂工程","en":"Roof structure — steel I-beam column, 200mm x 300mm, 1.0–1.2mm thickness","zh":"屋頂鋼結構I形柱（200x300mm，厚1.0–1.2mm）","unit":"nos","rate":6400.00},
+  "RF-02":{"cat":"J. Roofing 屋頂工程","en":"Roof structure — C-purlin, various sizes","zh":"屋頂C型檁條（多尺寸）","unit":"ft","rate":26.00},
+  "RF-03":{"cat":"J. Roofing 屋頂工程","en":"Supply and install zinc roofing sheet G26","zh":"供應及安裝鋅鐵屋頂板G26","unit":"sqft","rate":13.50},
+  "RF-04":{"cat":"J. Roofing 屋頂工程","en":"Roller shutter, electric motor type — supply and install","zh":"電動捲閘門供應安裝","unit":"set","rate":5000.00},
+  "MC-01":{"cat":"K. Miscellaneous 雜項","en":"Delivery, transportation and site management fee (lump sum)","zh":"運輸及工地管理費（整批）","unit":"lot","rate":0},
+  "MC-02":{"cat":"K. Miscellaneous 雜項","en":"General site cleaning after renovation works","zh":"工程後整體清潔","unit":"lot","rate":800.00}
+};
+
+/* ===================== STATE ===================== */
+let qType = 'residential';
+let rows = [];
+let customCount = 0;
+
+/* ===================== INIT ===================== */
+(function init() {
+  const sel = document.getElementById('item-sel');
+  const cats = {};
+  Object.entries(DB).forEach(([code, item]) => {
+    if (!cats[item.cat]) cats[item.cat] = [];
+    cats[item.cat].push([code, item]);
+  });
+  Object.entries(cats).forEach(([cat, items]) => {
+    const og = document.createElement('optgroup');
+    og.label = cat;
+    items.forEach(([code, item]) => {
+      const o = document.createElement('option');
+      o.value = code;
+      o.textContent = `${code}  ${item.en.length > 60 ? item.en.slice(0,58) + '…' : item.en}`;
+      og.appendChild(o);
+    });
+    sel.appendChild(og);
+  });
+  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+  renderRows();
+})();
+
+/* ===================== TYPE ===================== */
+function setType(t) {
+  qType = t;
+  document.getElementById('btn-res').classList.toggle('active', t==='residential');
+  document.getElementById('btn-com').classList.toggle('active', t==='commercial');
+  renderTotals();
+}
+
+/* ===================== ROWS ===================== */
+function addItem() {
+  const sel = document.getElementById('item-sel');
+  const code = sel.value;
+  if (!code) { alert('Please select an item first.\n請先選擇工程項目。'); return; }
+  const item = DB[code];
+  rows.push({ id: Date.now(), code, en: item.en, zh: item.zh, unit: item.unit, rate: item.rate, qty: 1, custom: false });
+  sel.value = '';
+  renderRows();
+}
+
+function addCustomRow() {
+  customCount++;
+  rows.push({ id: Date.now(), code: 'CUSTOM', en: '', zh: '', unit: 'lot', rate: 0, qty: 1, custom: true });
+  renderRows();
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('.custom-desc');
+    if (inputs.length) inputs[inputs.length-1].focus();
+  }, 50);
+}
+
+function deleteRow(id) {
+  rows = rows.filter(r => r.id !== id);
+  renderRows();
+}
+
+function updateField(id, field, val) {
+  const row = rows.find(r => r.id === id);
+  if (!row) return;
+  if (field === 'qty' || field === 'rate') row[field] = parseFloat(val) || 0;
+  else row[field] = val;
+  renderTotals();
+  // update amount cell only
+  const amtEl = document.getElementById(`amt-${id}`);
+  if (amtEl) {
+    const amt = row.qty * row.rate;
+    amtEl.textContent = amt > 0 ? 'RM ' + fmt(amt) : (row.unit === 'lot' && row.rate === 0 ? '—' : 'RM 0.00');
+  }
+}
+
+function renderRows() {
+  const tbody = document.getElementById('tbl-body');
+  tbody.innerHTML = '';
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">No items added yet. 尚未添加工程項目。<br><small>Use the dropdown above to select items. 請從上方下拉選單選擇項目。</small></td></tr>';
+    renderTotals(); return;
+  }
+  rows.forEach((row, idx) => {
+    const amt = row.qty * row.rate;
+    const tr = document.createElement('tr');
+    if (row.custom) {
+      tr.innerHTML = `
+        <td class="c" style="color:var(--muted);font-size:12px">${idx+1}</td>
+        <td><span class="code-pill" style="background:#FFF3CD;color:#856404">CUSTOM</span></td>
+        <td>
+          <input class="custom-desc" style="width:100%;border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:13px;margin-bottom:3px" placeholder="Description (EN) / 工程描述" value="${row.en}" oninput="updateField(${row.id},'en',this.value)">
+          <input style="width:100%;border:1px solid #eee;border-radius:4px;padding:3px 6px;font-size:12px;color:var(--muted)" placeholder="中文說明（選填）" value="${row.zh}" oninput="updateField(${row.id},'zh',this.value)">
+        </td>
+        <td class="c"><input class="qty-input" type="number" min="0" step="any" value="${row.qty}" oninput="updateField(${row.id},'qty',this.value)"></td>
+        <td class="c"><input style="width:55px;border:1px solid var(--border);border-radius:4px;padding:4px;text-align:center;font-size:12px" value="${row.unit}" oninput="updateField(${row.id},'unit',this.value)"></td>
+        <td class="r"><input style="width:80px;border:1px solid var(--border);border-radius:4px;padding:4px 6px;text-align:right;font-size:13px" type="number" min="0" step="any" value="${row.rate}" oninput="updateField(${row.id},'rate',this.value)"></td>
+        <td class="r amount-val" id="amt-${row.id}">${amt > 0 ? 'RM '+fmt(amt) : '—'}</td>
+        <td><button class="del-btn" onclick="deleteRow(${row.id})" title="Remove">✕</button></td>`;
+    } else {
+      tr.innerHTML = `
+        <td class="c" style="color:var(--muted);font-size:12px">${idx+1}</td>
+        <td><span class="code-pill">${row.code}</span></td>
+        <td><div class="desc-en">${row.en}</div><div class="desc-zh">${row.zh}</div></td>
+        <td class="c"><input class="qty-input" type="number" min="0" step="any" value="${row.qty}" oninput="updateField(${row.id},'qty',this.value)"></td>
+        <td class="c" style="color:var(--muted);font-size:12px">${row.unit}</td>
+        <td class="r" style="color:var(--muted);font-size:12px">${fmt(row.rate)}</td>
+        <td class="r amount-val" id="amt-${row.id}">${amt > 0 ? 'RM '+fmt(amt) : (row.unit === 'lot' && row.rate === 0 ? '—' : 'RM 0.00')}</td>
+        <td><button class="del-btn" onclick="deleteRow(${row.id})" title="Remove">✕</button></td>`;
+    }
+    tbody.appendChild(tr);
+  });
+  renderTotals();
+}
+
+function renderTotals() {
+  const sub = rows.reduce((s,r) => s + r.qty * r.rate, 0);
+  const sst = qType === 'commercial' ? sub * 0.06 : 0;
+  const grand = sub + sst;
+  document.getElementById('t-sub').textContent = 'RM ' + fmt(sub);
+  document.getElementById('t-sst').textContent = 'RM ' + fmt(sst);
+  document.getElementById('t-grand').textContent = 'RM ' + fmt(grand);
+  const sstLine = document.getElementById('sst-line');
+  sstLine.style.display = qType === 'commercial' ? 'block' : 'none';
+  document.getElementById('t-type-note').textContent = qType === 'commercial'
+    ? 'Commercial · SST 6% included · 商業類含6%消費稅'
+    : 'Residential · No SST · 住宅類免消費稅';
+}
+
+/* ===================== PREVIEW ===================== */
+function fmt(n) { return Number(n).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+function fmtDate(s) {
+  if (!s) return '';
+  const d = new Date(s);
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+function showPreview() {
+  if (rows.length === 0) { alert('Please add at least one item first.\n請先添加至少一個工程項目。'); return; }
+
+  const sub = rows.reduce((s,r) => s + r.qty * r.rate, 0);
+  const sst = qType === 'commercial' ? sub * 0.06 : 0;
+  const grand = sub + sst;
+
+  const ref    = document.getElementById('f-ref').value || 'QUO-XXXXXX-R1';
+  const date   = fmtDate(document.getElementById('f-date').value);
+  const by     = document.getElementById('f-by').value;
+  const client = document.getElementById('f-client').value || '[Client Name]';
+  const addr   = document.getElementById('f-addr').value || '[Site Address]';
+  const subj   = document.getElementById('f-subj').value || 'Quotation for Renovation Works';
+
+  const itemRows = rows.map((r, i) => {
+    const amt = r.qty * r.rate;
+    return `<tr>
+      <td style="text-align:center;color:#888;font-size:11px">${i+1}</td>
+      <td>
+        <div style="font-weight:500;font-size:12px">${r.en || '—'}</div>
+        ${r.zh ? `<div style="font-size:10px;color:#888;margin-top:2px">${r.zh}</div>` : ''}
+      </td>
+      <td style="text-align:center">${r.qty}</td>
+      <td style="text-align:center">${r.unit}</td>
+      <td class="r">${r.rate > 0 ? fmt(r.rate) : '—'}</td>
+      <td class="r"><strong>${amt > 0 ? fmt(amt) : '—'}</strong></td>
+    </tr>`;
+  }).join('');
+
+  const sstRow = qType === 'commercial'
+    ? `<tr><td class="tf-lbl" colspan="5">SST 6% 消費稅</td><td class="tf-val">RM ${fmt(sst)}</td></tr>`
+    : '';
+
+  const taxNote = qType === 'commercial'
+    ? '<em>This quotation is subject to SST at the prevailing rate of 6% (Commercial). 本報價單須課收6%消費稅（商業類）。</em>'
+    : '<em>This quotation is not subject to SST (Residential). 本報價單免徵消費稅（住宅類）。</em>';
+
+  document.getElementById('preview-content').innerHTML = `
+    <div class="doc-header">
+      <div class="doc-logo-text">
+        <div class="company">GAL Construction Design &amp; Renovation Sdn Bhd</div>
+        <div class="reg">(1566438-D) · Group of Companies</div>
+        <div class="addr">15A, Lorong Landasan, Jalan Bukit Kuda, 41300 Klang, Selangor, Malaysia</div>
+        <div class="addr">Tel: +603 3345 6318 &nbsp;·&nbsp; Email: gal.cdnr@gmail.com</div>
+      </div>
+      <div class="doc-title">
+        <div class="title-en">QUOTATION</div>
+        <div class="title-zh">報價單</div>
+      </div>
+    </div>
+    <hr class="doc-divider">
+    <div class="doc-meta">
+      <span class="mk">Ref No. / 報價編號</span><span class="mv">${ref}</span>
+      <span class="mk">Date / 日期</span><span class="mv">${date}</span>
+      ${by ? `<span class="mk">Prepared by / 報價人員</span><span class="mv">${by}</span>` : ''}
+      <span class="mk">To / 致</span><span class="mv">${client}</span>
+      <span class="mk">Site Address / 工地地址</span><span class="mv">${addr}</span>
+      <span class="mk">Subject / 事由</span><span class="mv">${subj}</span>
+      <span class="mk">Type / 類型</span><span class="mv">${qType==='commercial' ? 'Commercial (SST 6% applies) 商業類（須課6%消費稅）' : 'Residential (No SST) 住宅類（免消費稅）'}</span>
+    </div>
+    <p class="doc-intro">
+      We are pleased to submit our quotation for the above works as follows:<br>
+      <span class="zh">茲為上述工程提呈報價如下：</span>
+    </p>
+    <table class="doc-table">
+      <thead>
+        <tr>
+          <th style="width:32px" class="c">No.</th>
+          <th>Description / 工程項目說明</th>
+          <th style="width:44px" class="c">Qty</th>
+          <th style="width:44px" class="c">Unit</th>
+          <th style="width:76px" class="r">Rate (RM)</th>
+          <th style="width:86px" class="r">Amount (RM)</th>
+        </tr>
+      </thead>
+      <tbody>${itemRows}</tbody>
+      <tfoot>
+        <tr><td class="tf-lbl" colspan="5" style="background:#F5F5F5">Sub-Total 小計</td><td class="tf-val" style="background:#F5F5F5">RM ${fmt(sub)}</td></tr>
+        ${sstRow}
+        <tr class="tf-grand"><td class="tf-lbl tf-grand" colspan="5">TOTAL AMOUNT (RM) &nbsp; 總金額（令吉）</td><td class="tf-val tf-grand">RM ${fmt(grand)}</td></tr>
+      </tfoot>
+    </table>
+    <p class="doc-remark" style="margin-top:10px">${taxNote}</p>
+
+    <div class="doc-terms">
+      <h4>Terms &amp; Conditions &nbsp; 條款與細則</h4>
+      <p>1. <strong>Validity 有效期：</strong> This quotation is valid for 30 days from the date above. 本報價單自上述日期起30天內有效。</p>
+      <p>2. <strong>Payment Terms 付款條件：</strong><br>
+         &nbsp;&nbsp;&nbsp;1st Payment — 50% Deposit upon confirmation. &nbsp;首期款 — 確認訂單時支付50%訂金。<br>
+         &nbsp;&nbsp;&nbsp;2nd Payment — 45% Progressive upon materials arriving on site. &nbsp;二期款 — 材料進場後支付45%。<br>
+         &nbsp;&nbsp;&nbsp;3rd Payment — 5% upon completion and handover. &nbsp;尾款 — 工程完工交收時支付5%。
+      </p>
+      <p>3. We reserve the right to suspend works if payment is not received on time. 若未能依約付款，本公司保留暫停施工的權利。</p>
+      <p>4. Any Variation Order (VO) or additional works will be quoted separately. 任何追加工程（VO）將另行報價，並依照相同付款條件處理。</p>
+      <p>5. All statutory fees or penalties imposed by local authorities shall be borne by the owner/developer. 所有政府法定費用由業主/發展商承擔。</p>
+      <p style="margin-top:10px"><strong>Payment to / 支票抬頭：</strong> GAL CONSTRUCTION DESIGN &amp; RENOVATION SDN BHD<br>
+        Maybank (BBK Branch) — Account: 562 393 535 293 &nbsp;|&nbsp; CIMB (Meru Branch) — Account: 8606167789
+      </p>
+    </div>
+
+    <div class="doc-sigs">
+      <div class="doc-sig">
+        <div class="sig-line"></div>
+        <div class="sig-label">Authorized Signature &nbsp;/&nbsp; 授權簽署</div>
+        <div class="sig-label" style="margin-top:4px">GAL Construction Design &amp; Renovation Sdn Bhd</div>
+      </div>
+      <div class="doc-sig">
+        <div class="sig-line"></div>
+        <div class="sig-label">Confirmed &amp; Accepted</div>
+        <div class="sig-label" style="margin-top:4px">Signature &amp; IC No. &nbsp;/&nbsp; 確認簽署及身分證號碼</div>
+        <div class="sig-label" style="margin-top:2px">Name 姓名: _________________________ &nbsp; Date 日期: __________</div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('overlay').classList.add('active');
+  document.getElementById('preview-modal').scrollTop = 0;
+}
+
+function closePreview() { document.getElementById('overlay').classList.remove('active'); }
+function handleOverlayClick(e) { if (e.target === document.getElementById('overlay')) closePreview(); }
+
+function clearAll() {
+  if (rows.length && !confirm('Clear all items and reset? 確認清空所有項目？')) return;
+  rows = []; customCount = 0;
+  ['f-ref','f-client','f-addr','f-subj','f-by'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+  setType('residential');
+  renderRows();
+}
+</script>
+</body>
+</html>
