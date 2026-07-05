@@ -654,22 +654,18 @@ function printQuotation() {
     return;
   }
 
-  const logoImg = document.querySelector('.site-header img');
-  const logoSrc = logoImg ? logoImg.src : '';
-
   const printHtml = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <title>Quotation</title>
 <style>
-  @page { margin: 15mm 15mm 15mm 15mm; size: A4; }
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  body { font-family: Arial, sans-serif; font-size: 12px; color: #1a1a1a; background: #fff; }
+  @page { margin: 15mm; size: A4; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #1a1a1a; background: #fff; margin: 0; padding: 0; }
   .doc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
   .doc-logo-text .company { font-size: 15px; font-weight: 700; color: #1F3A5F; }
-  .doc-logo-text .reg { font-size: 10px; color: #777; }
-  .doc-logo-text .addr { font-size: 10px; color: #777; margin-top: 2px; }
+  .doc-logo-text .reg, .doc-logo-text .addr { font-size: 10px; color: #777; margin-top: 2px; }
   .doc-title { text-align: right; }
   .doc-title .title-en { font-size: 22px; font-weight: 700; color: #C0392B; }
   .doc-title .title-zh { font-size: 16px; font-weight: 700; color: #C0392B; }
@@ -679,18 +675,18 @@ function printQuotation() {
   .doc-meta .mv { color: #1a1a1a; }
   .doc-intro { font-size: 11px; font-style: italic; color: #555; margin-bottom: 12px; }
   .doc-intro .zh { color: #888; margin-top: 2px; }
-  .doc-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 0; page-break-inside: auto; }
+  .doc-table { width: 100%; border-collapse: collapse; font-size: 11px; }
   .doc-table thead { display: table-header-group; }
-  .doc-table thead tr { background: #1F3A5F !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .doc-table thead th { color: #ffffff !important; padding: 7px 8px; font-size: 10px; font-weight: 600; }
+  .doc-table thead tr { background: #1F3A5F !important; }
+  .doc-table thead th { color: #fff !important; padding: 7px 8px; font-size: 10px; font-weight: 600; text-align: left; }
   .doc-table thead th.r { text-align: right; }
   .doc-table thead th.c { text-align: center; }
   .doc-table tbody td { border: 1px solid #E0E0E0; padding: 6px 8px; vertical-align: top; }
   .doc-table tbody td.r { text-align: right; font-weight: 600; }
   .doc-table tfoot td { border: 1px solid #E0E0E0; padding: 6px 8px; }
   .tf-lbl { text-align: right; font-weight: 600; color: #555; background: #F5F5F5 !important; }
-  .tf-val { text-align: right; font-weight: 600; background: #F5F5F5 !important; min-width: 90px; }
-  .tf-grand { background: #1F3A5F !important; color: #ffffff !important; font-weight: 700 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .tf-val { text-align: right; font-weight: 600; background: #F5F5F5 !important; }
+  .tf-grand { background: #1F3A5F !important; color: #fff !important; font-weight: 700 !important; }
   .doc-remark { font-size: 10px; color: #666; margin-top: 8px; font-style: italic; }
   .doc-terms { margin-top: 14px; border-top: 1px solid #ddd; padding-top: 12px; page-break-inside: avoid; }
   .doc-terms h4 { font-size: 12px; font-weight: 700; color: #1F3A5F; margin-bottom: 6px; }
@@ -699,36 +695,24 @@ function printQuotation() {
   .doc-sig { text-align: center; }
   .sig-line { width: 180px; border-bottom: 1px solid #999; margin-bottom: 5px; height: 32px; }
   .sig-label { font-size: 10px; color: #888; }
-  .desc-en { font-weight: 500; }
+  .desc-en { font-size: 12px; font-weight: 500; }
   .zh { font-size: 10px; color: #888; margin-top: 2px; }
-  strong { font-weight: 600; }
 </style>
 </head>
 <body>
 ${content.innerHTML}
+<script>window.onload=function(){window.print();}<\/script>
 </body>
 </html>`;
 
-  const frame = document.getElementById('print-frame');
-  frame.style.display = 'none';
-  const frameDoc = frame.contentDocument || frame.contentWindow.document;
-  frameDoc.open();
-  frameDoc.write(printHtml);
-  frameDoc.close();
-
-  frame.onload = function() {
-    setTimeout(function() {
-      frame.contentWindow.focus();
-      frame.contentWindow.print();
-    }, 400);
-  };
-
-  if (frameDoc.readyState === 'complete') {
-    setTimeout(function() {
-      frame.contentWindow.focus();
-      frame.contentWindow.print();
-    }, 500);
+  const w = window.open('', '_blank', 'width=900,height=700');
+  if (!w) {
+    alert('Pop-up was blocked!\nPlease allow pop-ups for this site, then try again.\n\n彈出視窗被阻止！\n請允許此網站的彈出視窗後重試。');
+    return;
   }
+  w.document.open();
+  w.document.write(printHtml);
+  w.document.close();
 }
 
 </script>
